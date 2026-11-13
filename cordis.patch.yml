@@ -1,9 +1,6 @@
-# 天枢台 (dsh-tianshutai) DSH 插件侧边栏与服务挂载补丁
+# 天枢台 bundle patch: 把插件行插入 web profile 的插件名册。
+# 该行按包名解析 (node 半侧 = lib/index.js 在宿主进程运行并注册 /dsh-tianshutai 路由；
+# 浏览器半侧 = lib/client.js，由 package.json 的 dsh.client 声明加载)。
 - insert:
     - id: tianshutai
       name: 'dsh-tianshutai'
-      title: '天枢台'
-      icon: 'compass'
-      entry: 'static/index.html'
-      server: 'server/app.py'
-      defaultPort: 58765
