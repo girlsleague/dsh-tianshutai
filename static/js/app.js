@@ -6,6 +6,11 @@ let currentProfiles = [];
 let currentCalendarMode = 'solar'; // 'solar' | 'lunar'
 let currentViewMode = 'pro'; // 'simple' | 'pro'
 
+// API 基础路径：作为 DSH 插件时由 /dsh-tianshutai 前缀代理到本地 Python。
+// 独立运行(python server/app.py 直接开 58765)时为 '', 保持不变。
+const API_BASE = window.location.pathname.startsWith('/dsh-tianshutai') ? '/dsh-tianshutai' : '';
+function apiUrl(path) { return API_BASE + path; }
+
 // 全国主要省市经纬度数据库
 const CITY_DATABASE = {
   "北京": [
@@ -257,7 +262,7 @@ function initShortcuts() {
 // 7. 本地档案管理
 async function fetchProfiles() {
   try {
-    const res = await fetch('/api/profiles');
+    const res = await fetch(apiUrl('/api/profiles'));
     currentProfiles = await res.json();
     document.getElementById('profilesCountText').innerText = `自动同步 共 ${currentProfiles.length} 盘`;
     renderProfilesList(currentProfiles);
@@ -327,7 +332,7 @@ async function saveCurrentToProfiles() {
   };
 
   try {
-    const res = await fetch('/api/profiles/save', {
+    const res = await fetch(apiUrl('/api/profiles/save'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -370,7 +375,7 @@ async function triggerCalculate() {
   }
 
   try {
-    const res = await fetch('/api/bazi/calculate', {
+    const res = await fetch(apiUrl('/api/bazi/calculate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -888,19 +893,19 @@ async function triggerHepanCalculate() {
 
   // 快捷发起两人的排盘再合盘
   try {
-    const resA = await fetch('/api/bazi/calculate', {
+    const resA = await fetch(apiUrl('/api/bazi/calculate'), {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ solar_date: profA.birth_solar.split(' ')[0], solar_time: profA.birth_solar.split(' ')[1], gender: profA.gender })
     });
     const chartA = await resA.json();
 
-    const resB = await fetch('/api/bazi/calculate', {
+    const resB = await fetch(apiUrl('/api/bazi/calculate'), {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ solar_date: profB.birth_solar.split(' ')[0], solar_time: profB.birth_solar.split(' ')[1], gender: profB.gender })
     });
     const chartB = await resB.json();
 
-    const hepanRes = await fetch('/api/hepan/calculate', {
+    const hepanRes = await fetch(apiUrl('/api/hepan/calculate'), {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ chart_a: chartA, chart_b: chartB })
     });
@@ -1209,7 +1214,7 @@ async function sendChatMessage() {
   msgContainer.scrollTop = msgContainer.scrollHeight;
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch(apiUrl('/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
