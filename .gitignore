@@ -1,0 +1,21 @@
+# 字节码与缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# 本地运行日志与临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 用户私人排盘隐私数据 (本地生成的隐私档案不提交到公共仓库)
+# data/profiles.json 在发布时只保留包含 demo 初始数据的样例
+data/profiles_custom.json
+data/*.bak
+
+# 编辑器与系统配置
+.vscode/
+.idea/
+*.swp

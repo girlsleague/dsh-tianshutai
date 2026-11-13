@@ -1,0 +1,39 @@
+{
+  "name": "dsh-tianshutai",
+  "version": "2.0.0",
+  "description": "天枢台 (Tianshu Workbench) · 赛博命理分析中心 DSH 插件。融合《滴天髓》《穷通宝鉴》《三命通会》《子平真诠》与倪海厦《天纪》正宗体系，提供高精度真太阳时四柱八字排盘、紫微斗数十二宫全盘、大运通俗深解、关键流年事件推演(附行动对策锦囊)、双人合盘(合婚合伙)与一键生成手机分享长图。",
+  "author": "girlsleague",
+  "license": "MIT",
+  "homepage": "https://github.com/girlsleague/dsh-tianshutai#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/girlsleague/dsh-tianshutai.git"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "dsh-workbench",
+    "bazi",
+    "ziwei-doushu",
+    "mingli",
+    "iching",
+    "chinese-astrology"
+  ],
+  "main": "server/app.py",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "sidebar": {
+      "id": "tianshutai",
+      "title": "天枢台",
+      "icon": "compass",
+      "url": "http://127.0.0.1:58765"
+    }
+  },
+  "scripts": {
+    "start": "python server/app.py"
+  },
+  "dependencies": {
+    "lunar-python": "^1.4.9"
+  }
+}

@@ -1,0 +1,9 @@
+# 天枢台 (dsh-tianshutai) DSH 插件侧边栏与服务挂载补丁
+- insert:
+    - id: tianshutai
+      name: 'dsh-tianshutai'
+      title: '天枢台'
+      icon: 'compass'
+      entry: 'static/index.html'
+      server: 'server/app.py'
+      defaultPort: 58765

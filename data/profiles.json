@@ -1,0 +1,15 @@
+[
+  {
+    "id": "demo-001",
+    "name": "演示命造 (示例)",
+    "gender": "男",
+    "calendar_type": "solar",
+    "birth_solar": "2001-04-23 23:40",
+    "city": "北京市 东城区",
+    "lng": 116.422,
+    "lat": 39.935,
+    "true_solar_enabled": true,
+    "note": "内置演示盘 (辛巳 壬辰 丙辰 庚子)",
+    "createdAt": "2026-11-12T12:00:00"
+  }
+]

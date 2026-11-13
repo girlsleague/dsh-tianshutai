@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天枢台 · 命理中心 (TIANSHU WORKBENCH)</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-cyber">
+
+  <!-- 页面顶部 Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="app-logo">
+        <span class="seal-icon">天</span>
+      </div>
+      <div class="app-title-group">
+        <div class="title-row">
+          <span class="app-name">天枢台 · 命理中心</span>
+          <span class="app-sub">TIANSHU WORKBENCH</span>
+        </div>
+        <div class="active-profile-summary" id="headerProfileSummary">
+          <span class="summary-item name" id="hdrName">载入中...</span>
+          <span class="summary-item bazi" id="hdrBazi">---- ---- ---- ----</span>
+          <span class="summary-item daymaster" id="hdrDayMaster">日主 --</span>
+          <span class="summary-item dayun" id="hdrDayun">当前大运: --</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- 双模切换开关 (小白人设 vs 专家罗盘) -->
+      <div class="view-mode-toggle">
+        <button type="button" class="view-btn" id="btnModeSimple" onclick="setViewMode('simple')">✨ 小白人设</button>
+        <button type="button" class="view-btn active" id="btnModePro" onclick="setViewMode('pro')">🧭 专家罗盘</button>
+      </div>
+
+      <!-- 主题切换选择器 -->
+      <div class="theme-selector-box">
+        <select id="themeSelect" onchange="changeTheme(this.value)">
+          <option value="theme-cyber" selected>🖤 玄墨赛博</option>
+          <option value="theme-landscape">🌲 青绿山水</option>
+          <option value="theme-crimson">👑 赤金朱砂</option>
+          <option value="theme-xuanpaper">📜 素雪宣纸</option>
+        </select>
+      </div>
+
+      <!-- 生成分享海报按钮 -->
+      <button class="btn-poster-top" onclick="openSharePosterModal()">
+        <span>📷 生成命运长图</span>
+      </button>
+
+      <button class="ai-oracle-btn" id="openChatBtn">
+        <span class="pulse-dot"></span>
+        <span class="icon">💬</span>
+        <span class="text">问命盘师</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 顶部主导航 Tab 栏 -->
+  <nav class="nav-tabs-bar">
+    <div class="tabs-wrapper">
+      <button class="tab-btn active" data-tab="tab-bazi">命盘总览</button>
+      <button class="tab-btn" data-tab="tab-dayun">大运流年</button>
+      <button class="tab-btn" data-tab="tab-timeline">关键流年事件 <span class="badge-accent">模型校准</span></button>
+      <button class="tab-btn" data-tab="tab-scenarios">现实场景 <span class="badge-hot">深度详析</span></button>
+      <button class="tab-btn" data-tab="tab-ziwei">紫微斗数 (天纪全盘)</button>
+      <button class="tab-btn" data-tab="tab-hepan">双人合盘 <span class="badge-new">合婚合伙</span></button>
+      <button class="tab-btn" data-tab="tab-records">档案库</button>
+      <button class="tab-btn export-tab-btn" data-tab="tab-export">🖨️ 打印导出报告</button>
+    </div>
+  </nav>
+
+  <!-- 主体工作区 -->
+  <main class="workbench-layout">
+
+    <!-- 左侧参数控制栏 -->
+    <aside class="control-sidebar">
+      <div class="sidebar-header">
+        <h3>出生信息录入</h3>
+        <span class="solar-tip">支持公历/农历·真太阳时经纬度校准</span>
+      </div>
+
+      <form id="baziForm" onsubmit="event.preventDefault(); triggerCalculate();">
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="inputName" value="某某" placeholder="请输入姓名">
+        </div>
+
+        <div class="form-group">
+          <label>性别</label>
+          <div class="gender-toggle">
+            <label class="radio-label">
+              <input type="radio" name="gender" value="男" checked> <span>男 (乾造)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="gender" value="女"> <span>女 (坤造)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 历法切换：公历 vs 农历 -->
+        <div class="form-group">
+          <label>出生历法</label>
+          <div class="calendar-mode-toggle">
+            <button type="button" class="mode-btn active" id="btnSolarMode" onclick="setCalendarMode('solar')">公历 (阳历)</button>
+            <button type="button" class="mode-btn" id="btnLunarMode" onclick="setCalendarMode('lunar')">农历 (阴历)</button>
+          </div>
+        </div>
+
+        <!-- 公历输入区 -->
+        <div class="calendar-inputs-solar" id="solarInputBox">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>公历日期</label>
+              <input type="date" id="inputSolarDate" value="2001-04-23">
+            </div>
+            <div class="form-group">
+              <label>时辰下拉</label>
+              <select id="solarShichenSelect" onchange="onShichenSelectChanged(this.value, 'solar')">
+                <option value="23:40">晚子时 (23:00-01:00)</option>
+                <option value="02:00">丑时 (01:00-03:00)</option>
+                <option value="04:00">寅时 (03:00-05:00)</option>
+                <option value="06:00">卯时 (05:00-07:00)</option>
+                <option value="08:00">辰时 (07:00-09:00)</option>
+                <option value="10:00">巳时 (09:00-11:00)</option>
+                <option value="12:00">午时 (11:00-13:00)</option>
+                <option value="14:00">未时 (13:00-15:00)</option>
+                <option value="16:00">申时 (15:00-17:00)</option>
+                <option value="18:00">酉时 (17:00-19:00)</option>
+                <option value="20:00">戌时 (19:00-21:00)</option>
+                <option value="22:00">亥时 (21:00-23:00)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>精确钟表时间 (可手动微调)</label>
+            <input type="time" id="inputSolarTime" value="23:40">
+          </div>
+        </div>
+
+        <!-- 农历输入区 -->
+        <div class="calendar-inputs-lunar" id="lunarInputBox" style="display:none;">
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>农历年</label>
+              <select id="lunarYearSelect"></select>
+            </div>
+            <div class="form-group">
+              <label>农历月</label>
+              <select id="lunarMonthSelect"></select>
+            </div>
+            <div class="form-group">
+              <label>农历日</label>
+              <select id="lunarDaySelect"></select>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="checkbox-inline">
+                <input type="checkbox" id="lunarIsLeap"> <span>是否闰月</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>时辰下拉</label>
+              <select id="lunarShichenSelect" onchange="onShichenSelectChanged(this.value, 'lunar')">
+                <option value="00:30">早子时 (00:00-01:00)</option>
+                <option value="02:00">丑时 (01:00-03:00)</option>
+                <option value="04:00">寅时 (03:00-05:00)</option>
+                <option value="06:00">卯时 (05:00-07:00)</option>
+                <option value="07:30">辰时 (07:00-09:00)</option>
+                <option value="10:00">巳时 (09:00-11:00)</option>
+                <option value="12:00">午时 (11:00-13:00)</option>
+                <option value="14:00">未时 (13:00-15:00)</option>
+                <option value="16:00">申时 (15:00-17:00)</option>
+                <option value="18:00">酉时 (17:00-19:00)</option>
+                <option value="20:00">戌时 (19:00-21:00)</option>
+                <option value="22:00">亥时 (21:00-23:00)</option>
+                <option value="23:30">晚子时 (23:00-24:00)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 出生地级联下拉 -->
+        <div class="form-group">
+          <label>出生地 (省份 / 城市下拉级联)</label>
+          <div class="form-row-2">
+            <select id="provinceSelect" onchange="onProvinceChanged(this.value)">
+              <option value="北京">北京市</option>
+              <option value="湖北">湖北省</option>
+              <option value="河南">河南省</option>
+              <option value="上海">上海市</option>
+              <option value="广东">广东省</option>
+              <option value="浙江">浙江省</option>
+              <option value="江苏">江苏省</option>
+              <option value="四川">四川省</option>
+              <option value="山东">山东省</option>
+              <option value="陕西">陕西省</option>
+              <option value="湖南">湖南省</option>
+            </select>
+            <select id="citySelect" onchange="onCityOptionChanged(this.value)"></select>
+          </div>
+          <div class="tip-sub">经纬度自动获取: <span id="coordDisplay">116.422, 39.935</span></div>
+        </div>
+
+        <div class="form-group switch-group">
+          <div class="switch-row">
+            <span class="switch-title">真太阳时校正</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="trueSolarToggle" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div class="tip-sub">钟表时间 - 夏令时 + 经度差 + 均时差</div>
+        </div>
+
+        <div class="form-group">
+          <label>参考日 (当前流年节点)</label>
+          <input type="date" id="inputRefDate" value="2026-11-13">
+        </div>
+
+        <div class="form-group">
+          <label>备注</label>
+          <input type="text" id="inputNote" placeholder="例如「母亲口述时间」" value="面板排盘">
+        </div>
+
+        <details class="advanced-details">
+          <summary>∨ 高级微调：手动经纬度</summary>
+          <div class="advanced-box">
+            <div class="form-group">
+              <label>手动经度 (East °)</label>
+              <input type="number" step="0.001" id="customLng" value="116.422">
+            </div>
+            <div class="form-group">
+              <label>手动纬度 (North °)</label>
+              <input type="number" step="0.001" id="customLat" value="39.935">
+            </div>
+          </div>
+        </details>
+
+        <div class="action-buttons-group">
+          <button type="button" class="btn-primary-pan" onclick="triggerCalculate()">
+            <span>立即排盘</span>
+          </button>
+          <button type="button" class="btn-secondary-example" onclick="showExamplePicker()">
+            载入示例命盘
+          </button>
+        </div>
+        <div class="shortcut-tip">快捷键：⌘ / Ctrl + Enter</div>
+      </form>
+    </aside>
+
+    <!-- 右侧内容视窗 -->
+    <section class="content-viewport">
+
+      <!-- ================== Tab 1: 命盘总览 ================== -->
+      <div class="tab-panel active" id="tab-bazi">
+        
+        <!-- 小白模式专属卡片 (默认隐藏，开启小白模式时显示) -->
+        <div class="simple-mode-hero" id="simpleModeHero" style="display:none;">
+          <div class="sm-card">
+            <div class="sm-badge">✨ 你的赛博命运画像</div>
+            <h2 class="sm-title" id="smHeroTitle">丙火 · 自燃型破局开拓者</h2>
+            <p class="sm-desc" id="smHeroDesc">
+              你天生带着一股不服输的劲头，脑子转得飞快。虽然外界压力偶有波折，但只要给你一点火星，你就能凭借强大的执行力和商业嗅觉逆风翻盘。
+            </p>
+            <div class="sm-tags" id="smHeroTags">
+              <span class="sm-tag">💰 偏财丰厚</span>
+              <span class="sm-tag">🌟 文昌入命</span>
+              <span class="sm-tag">🛡️ 贵人暗护</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 专家模式完整面板 -->
+        <div class="pro-mode-view" id="proModeView">
+          <div class="bazi-title-banner">
+            <div class="banner-left">
+              <h1 class="big-bazi-text" id="bigBaziTitle">辛巳 壬辰 丙辰 庚子</h1>
+              <div class="meta-row">
+                <span id="metaProfileText">某某 男 北京市 东城区 2001-04-23 23:40 面板排盘</span>
+              </div>
+            </div>
+            <div class="banner-right">
+              <div class="daymaster-pill">
+                <span class="pill-title" id="dmTitle">日主 丙·火</span>
+                <span class="pill-status" id="dmStatus">偏弱</span>
+                <span class="pill-score" id="dmScore">27.9</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 四柱大卡片 -->
+          <div class="four-pillars-container">
+            <div class="pillar-column" id="pillar-year">
+              <div class="pillar-semantic">祖辈/早年</div>
+              <div class="pillar-shishen" id="p0-shishen">正财</div>
+              <div class="pillar-gz-box">
+                <div class="gan-char" id="p0-gan">辛</div>
+                <div class="zhi-char" id="p0-zhi">巳</div>
+              </div>
+              <div class="pillar-wuxing-pair" id="p0-wx">金·火</div>
+              <div class="canggan-capsules" id="p0-canggan"></div>
+              <div class="pillar-detail-rows">
+                <div class="detail-row"><span class="k">纳音</span><span class="v" id="p0-nayin">白蜡金</span></div>
+                <div class="detail-row"><span class="k">星运</span><span class="v" id="p0-changsheng">临官</span></div>
+                <div class="detail-row"><span class="k">空亡</span><span class="v" id="p0-kongwang">申酉</span></div>
+              </div>
+            </div>
+
+            <div class="pillar-column" id="pillar-month">
+              <div class="pillar-semantic">父母/成长</div>
+              <div class="pillar-shishen" id="p1-shishen">七杀</div>
+              <div class="pillar-gz-box">
+                <div class="gan-char" id="p1-gan">壬</div>
+                <div class="zhi-char" id="p1-zhi">辰</div>
+              </div>
+              <div class="pillar-wuxing-pair" id="p1-wx">水·土</div>
+              <div class="canggan-capsules" id="p1-canggan"></div>
+              <div class="pillar-detail-rows">
+                <div class="detail-row"><span class="k">纳音</span><span class="v" id="p1-nayin">长流水</span></div>
+                <div class="detail-row"><span class="k">星运</span><span class="v" id="p1-changsheng">冠带</span></div>
+                <div class="detail-row"><span class="k">空亡</span><span class="v" id="p1-kongwang">午未</span></div>
+              </div>
+            </div>
+
+            <div class="pillar-column is-day-pillar" id="pillar-day">
+              <span class="daymaster-tag">日主</span>
+              <div class="pillar-semantic">自我/亲密</div>
+              <div class="pillar-shishen" id="p2-shishen">日主</div>
+              <div class="pillar-gz-box">
+                <div class="gan-char" id="p2-gan">丙</div>
+                <div class="zhi-char" id="p2-zhi">辰</div>
+              </div>
+              <div class="pillar-wuxing-pair" id="p2-wx">火·土</div>
+              <div class="canggan-capsules" id="p2-canggan"></div>
+              <div class="pillar-detail-rows">
+                <div class="detail-row"><span class="k">纳音</span><span class="v" id="p2-nayin">沙中土</span></div>
+                <div class="detail-row"><span class="k">星运</span><span class="v" id="p2-changsheng">冠带</span></div>
+                <div class="detail-row"><span class="k">空亡</span><span class="v" id="p2-kongwang">子丑</span></div>
+              </div>
+            </div>
+
+            <div class="pillar-column" id="pillar-time">
+              <div class="pillar-semantic">子女/晚年</div>
+              <div class="pillar-shishen" id="p3-shishen">偏财</div>
+              <div class="pillar-gz-box">
+                <div class="gan-char" id="p3-gan">庚</div>
+                <div class="zhi-char" id="p3-zhi">子</div>
+              </div>
+              <div class="pillar-wuxing-pair" id="p3-wx">金·水</div>
+              <div class="canggan-capsules" id="p3-canggan"></div>
+              <div class="pillar-detail-rows">
+                <div class="detail-row"><span class="k">纳音</span><span class="v" id="p3-nayin">壁上土</span></div>
+                <div class="detail-row"><span class="k">星运</span><span class="v" id="p3-changsheng">胎</span></div>
+                <div class="detail-row"><span class="k">空亡</span><span class="v" id="p3-kongwang">辰巳</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中下部量化区域 -->
+          <div class="chart-metrics-row">
+            <div class="metrics-block wuxing-card">
+              <div class="card-title-row">
+                <h4>五行环</h4>
+                <span class="sub-label">能量百分比</span>
+              </div>
+              <div class="donut-display-area">
+                <div class="donut-svg-wrapper">
+                  <svg id="wuxingDonutSvg" viewBox="0 0 160 160" width="150" height="150"></svg>
+                  <div class="donut-center-info">
+                    <div class="center-gan" id="centerGan">丙</div>
+                    <div class="center-sub" id="centerSub">偏弱 27.9</div>
+                  </div>
+                </div>
+                <div class="wuxing-legend-grid" id="wuxingLegendGrid"></div>
+              </div>
+
+              <div class="wuxing-progress-list" id="wuxingProgressList"></div>
+              <div class="card-footer-formula" id="wuxingCountsFooter">
+                surface + hidden = 木2 火3 土5 金3 水5
+              </div>
+            </div>
+
+            <div class="metrics-block strength-card">
+              <div class="card-title-row">
+                <h4>日主旺衰</h4>
+                <span class="sub-label">启发式权重 v2.0</span>
+              </div>
+
+              <div class="gauge-and-parties">
+                <div class="gauge-wrapper">
+                  <svg viewBox="0 0 180 100" width="160" height="90">
+                    <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#2a2a32" stroke-width="12" stroke-linecap="round"/>
+                    <path id="gaugeActiveArc" d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#ea5455" stroke-width="12" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="150"/>
+                  </svg>
+                  <div class="gauge-center-text">
+                    <div class="gauge-num" id="gaugeNum">27.9</div>
+                    <div class="gauge-status" id="gaugeStatus">偏弱</div>
+                    <div class="gauge-season" id="gaugeSeason">月令相·火</div>
+                  </div>
+                </div>
+
+                <div class="parties-col">
+                  <div class="party-item"><span class="k">比劫</span><span class="dot fire"></span></div>
+                  <div class="party-item"><span class="k">印星</span><span class="dot wood"></span></div>
+                  <div class="party-item"><span class="k">食伤</span><span class="dot earth"></span></div>
+                  <div class="party-item"><span class="k">财星</span><span class="dot gold"></span></div>
+                  <div class="party-item"><span class="k">官杀</span><span class="dot water"></span></div>
+                </div>
+              </div>
+
+              <div class="shishen-section">
+                <div class="section-hdr">
+                  <span>十神能量分布</span>
+                  <span class="count-tag" id="shishenCountTag">共 7 条</span>
+                </div>
+                <div class="shishen-bar-list" id="shishenBarList"></div>
+              </div>
+
+              <div class="shensha-section">
+                <div class="section-hdr">
+                  <span>神煞矩阵</span>
+                  <span class="count-tag" id="shenshaCountTag">命中 6 / 12</span>
+                </div>
+                <div class="shensha-chips-grid" id="shenshaGrid"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================== Tab 2: 大运流年 ================== -->
+      <div class="tab-panel" id="tab-dayun">
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <h3>一生大运起伏走势 (虚岁 1–80 岁波形图)</h3>
+            <span class="tag-accent" id="dayunStartAgeTag">起运时间：约 7 岁 4 个月</span>
+          </div>
+          <div class="dayun-chart-canvas-box">
+            <canvas id="dayunCanvas" width="900" height="190"></canvas>
+          </div>
+        </div>
+
+        <div class="section-panel-card mt-4">
+          <div class="panel-header-row">
+            <h3>八步大运演进 (点击切换查看通俗深度解读)</h3>
+            <span class="sub-label">高亮显示当前所处行运</span>
+          </div>
+          <div class="dayun-strip" id="dayunStrip"></div>
+        </div>
+
+        <!-- 选中大运通俗深解卡片 -->
+        <div class="section-panel-card mt-4 dayun-deep-card" id="dayunDeepCard">
+          <div class="deep-card-header">
+            <div class="deep-title-group">
+              <span class="badge-dayun" id="deepDayunGz">庚寅运</span>
+              <h3 id="deepDayunTitle">十年偏财大运 · 经商谋略与资本积累期</h3>
+            </div>
+            <span class="years-pill" id="deepDayunSpan">2017–2026 年 (虚岁 17–26 岁)</span>
+          </div>
+
+          <div class="deep-card-body">
+            <div class="deep-item">
+              <span class="deep-lbl">运势总评：</span>
+              <p id="deepDayunSummary">十年总体运势总结...</p>
+            </div>
+            <div class="deep-grid-2">
+              <div class="deep-sub-box">
+                <span class="deep-lbl">💼 事业与机运走向：</span>
+                <p id="deepDayunCareer">事业详情...</p>
+              </div>
+              <div class="deep-sub-box">
+                <span class="deep-lbl">💰 财富与避坑指南：</span>
+                <p id="deepDayunWealth">财运详情...</p>
+              </div>
+            </div>
+            <div class="deep-item mt-3">
+              <span class="deep-lbl">💡 处世与修身心法：</span>
+              <p id="deepDayunMindset" class="highlight-mindset">心法锦囊...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-panel-card mt-4">
+          <div class="panel-header-row">
+            <h3 id="currentSelectedDayunTitle">十年流年轮盘</h3>
+            <span class="sub-label">岁运并临与天克地冲重点标注</span>
+          </div>
+          <div class="liunian-grid" id="liunianGrid"></div>
+        </div>
+      </div>
+
+      <!-- ================== Tab 3: 关键流年事件 (带【天枢化解锦囊】) ================== -->
+      <div class="tab-panel" id="tab-timeline">
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <div>
+              <h3>关键流年历史事件推演 (2012–2026) · 附行动对策锦囊</h3>
+              <p class="sub-desc">系统基于十神与地支冲合自动推演过去重大转折。每个风险点均配备了「⚡ 天枢化解锦囊」，点击右侧反馈可协助模型自学习。</p>
+            </div>
+            <div class="accuracy-score-box">
+              <span class="acc-num" id="accRateText">88%</span>
+              <span class="acc-lbl">模型历史拟合度</span>
+            </div>
+          </div>
+
+          <div class="timeline-events-list" id="timelineEventsList"></div>
+        </div>
+      </div>
+
+      <!-- ================== Tab 4: 现实场景 ================== -->
+      <div class="tab-panel" id="tab-scenarios">
+        
+        <!-- 1. 搞钱 -->
+        <div class="scenario-card">
+          <div class="scenario-header">
+            <span class="scenario-icon">💰</span>
+            <div class="title-wrap">
+              <h3>一生财运模式与搞钱赛道</h3>
+              <span class="sub" id="scWealthType">多元副业与敏锐商机型</span>
+            </div>
+          </div>
+          <div class="scenario-body">
+            <p id="scWealthSummary" class="lead-desc">正在计算财运摘要...</p>
+            <div class="deep-details-container mt-3">
+              <details class="scenario-detail-item" open>
+                <summary>📈 深度详情 1：一生财富体量上限与财库开合</summary>
+                <div class="detail-content" id="scWealthCap">--</div>
+              </details>
+              <details class="scenario-detail-item" open>
+                <summary>⚡ 深度详情 2：第一桶金与财富爆发应期</summary>
+                <div class="detail-content" id="scWealthFirst">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>⚠️ 深度详情 3：合伙做生意与借贷担保必死雷区</summary>
+                <div class="detail-content" id="scWealthRisk">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>🏰 深度详情 4：现金流转化为不动产守财策略</summary>
+                <div class="detail-content" id="scWealthAsset">--</div>
+              </details>
+            </div>
+
+            <h5 class="mt-4">五行现代行业契合度评分与岗位定位：</h5>
+            <div class="career-match-grid" id="careerMatchGrid"></div>
+          </div>
+        </div>
+
+        <!-- 2. 婚恋 -->
+        <div class="scenario-card mt-4">
+          <div class="scenario-header">
+            <span class="scenario-icon">💖</span>
+            <div class="title-wrap">
+              <h3>婚恋与正缘立体画像</h3>
+              <span class="sub">伴侣体态相貌、相遇场景及婚后暗礁破解</span>
+            </div>
+          </div>
+          <div class="scenario-body">
+            <div class="spouse-summary-box">
+              <div class="portrait-item">
+                <span class="lbl">配偶宫位：</span>
+                <span class="val" id="scSpouseZhi">日支坐辰</span>
+              </div>
+              <div class="portrait-item">
+                <span class="lbl">外貌速描：</span>
+                <span class="val" id="scSpouseLooks">端庄大气，为人圆融周到，做事稳重有格局</span>
+              </div>
+            </div>
+
+            <div class="deep-details-container mt-3">
+              <details class="scenario-detail-item" open>
+                <summary>📍 深度详情 1：正缘相识地点与机缘契机</summary>
+                <div class="detail-content" id="scMarriageEncounter">--</div>
+              </details>
+              <details class="scenario-detail-item" open>
+                <summary>🎭 深度详情 2：伴侣真实性格与相处脾性深度刻画</summary>
+                <div class="detail-content" id="scMarriagePersonality">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>🌊 深度详情 3：婚姻暗礁与家庭冷战化解锦囊</summary>
+                <div class="detail-content" id="scMarriageCrisis">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>💍 深度详情 4：红鸾星动与黄金成家窗口年份</summary>
+                <div class="detail-content" id="scMarriageWindow">--</div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 健康 -->
+        <div class="scenario-card mt-4">
+          <div class="scenario-header">
+            <span class="scenario-icon">🌿</span>
+            <div class="title-wrap">
+              <h3>体质弱项与中医食养调和 (倪海厦《天纪》医理)</h3>
+              <span class="sub">全盘杀星最聚之宫脏腑预警 & 节气调摄</span>
+            </div>
+          </div>
+          <div class="scenario-body">
+            <div class="health-alert-box">
+              <div class="alert-icon">⚠️</div>
+              <div class="alert-content">
+                <strong id="scHealthWeak">全盘五行中偏弱：木</strong>
+                <div id="scHealthOrgan">对应脏腑：肝胆、筋骨、经络、眼目疲劳</div>
+                <div class="mt-1" id="scHealthLifestyle">疏肝理气，防熬夜伤阴</div>
+              </div>
+            </div>
+
+            <div class="deep-details-container mt-3">
+              <details class="scenario-detail-item" open>
+                <summary>📖 深度详情 1：倪海厦《天纪》杀星脏腑对应法医理解析</summary>
+                <div class="detail-content" id="scHealthNishiTheory">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>🚨 深度详情 2：全生命周期最易患病与衰弱的岁运预警</summary>
+                <div class="detail-content" id="scHealthRiskYears">--</div>
+              </details>
+              <details class="scenario-detail-item">
+                <summary>🍲 深度详情 3：对症四季草本茶饮与温补食疗膳方</summary>
+                <div class="detail-content" id="scHealthFoodTherapy">--</div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 流月 -->
+        <div class="scenario-card mt-4">
+          <div class="scenario-header">
+            <span class="scenario-icon">📅</span>
+            <div class="title-wrap">
+              <h3>2026 丙午流年 12 个月运势晴雨表 (点击展开每月细节)</h3>
+              <span class="sub">按月规划，顺势而为</span>
+            </div>
+          </div>
+          <div class="scenario-body">
+            <div class="months-timeline-grid" id="monthsGrid"></div>
+          </div>
+        </div>
+
+        <!-- 5. 开运 -->
+        <div class="scenario-card mt-4">
+          <div class="scenario-header">
+            <span class="scenario-icon">🔮</span>
+            <div class="title-wrap">
+              <h3>天枢专属开运磁场方案 (办公与居家气场调优)</h3>
+              <span class="sub">幸运色、吉方、数字、佩饰与风水细节</span>
+            </div>
+          </div>
+          <div class="scenario-body">
+            <div class="fortune-plan-grid">
+              <div class="plan-cell">
+                <span class="k">喜用五行</span>
+                <span class="v" id="scPlanWx">木 / 火</span>
+              </div>
+              <div class="plan-cell">
+                <span class="k">幸运穿搭色</span>
+                <span class="v" id="scPlanColors">青绿、墨绿 / 朱红、赤橘</span>
+              </div>
+              <div class="plan-cell">
+                <span class="k">吉利方位</span>
+                <span class="v" id="scPlanDirs">正东、东南 / 正南</span>
+              </div>
+              <div class="plan-cell">
+                <span class="k">幸运数字</span>
+                <span class="v" id="scPlanNums">3、8 / 2、7</span>
+              </div>
+            </div>
+            <p class="mt-3 text-muted" id="scPlanOrnaments">佩饰建议...</p>
+            <div class="fengshui-box mt-3" id="scPlanFengshui">办公桌布置与床头朝向...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================== Tab 5: 紫微斗数 ================== -->
+      <div class="tab-panel" id="tab-ziwei">
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <div>
+              <h3>紫微斗数十二宫星盘 (倪海厦《天纪》正宗排布)</h3>
+              <span class="sub-label">含十四主星庙旺利陷、生年四化、大限年龄；点击任意宫位在中宫查看古籍详解</span>
+            </div>
+            <span class="tag-accent" id="zwJuName">木三局 · 命宫坐未</span>
+          </div>
+
+          <div class="ziwei-master-layout">
+            <div class="ziwei-chart-grid" id="ziweiGrid"></div>
+            <div class="ziwei-detail-sidebar" id="ziweiPalaceDetailBox">
+              <h4 id="zwDetailPalaceName">请点击左侧任一宫位</h4>
+              <div class="zw-detail-stars" id="zwDetailStars">--</div>
+              <div class="zw-detail-text" id="zwDetailExplanation">
+                点击左侧星盘中的任意宫位（如命宫、财帛、官禄、夫妻），此处将展示倪海厦老师《天纪》断语与《紫微斗数全书》逐字古籍考证。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== Tab 6: 双人合盘 (新增合婚合伙) ================== -->
+      <div class="tab-panel" id="tab-hepan">
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <div>
+              <h3>天枢双人合盘 · 关系契合度测评</h3>
+              <span class="sub-label">支持婚恋伴侣合婚、商业合伙测评、性格互补度量化</span>
+            </div>
+          </div>
+
+          <div class="hepan-select-bar">
+            <div class="hepan-person-box">
+              <label>甲方 (主测者)：</label>
+              <select id="hepanSelectA"></select>
+            </div>
+            <div class="hepan-vs-icon">⚡ VS ⚡</div>
+            <div class="hepan-person-box">
+              <label>乙方 (对方)：</label>
+              <select id="hepanSelectB"></select>
+            </div>
+            <button class="btn-primary-pan" onclick="triggerHepanCalculate()" style="padding:8px 24px;">开始合盘分析</button>
+          </div>
+
+          <div class="hepan-result-container" id="hepanResultBox" style="display:none;">
+            <div class="hepan-score-hero">
+              <div class="hp-score-num" id="hpScoreVal">85</div>
+              <div class="hp-score-text">
+                <h3 id="hpLevelVal">天作之合 · 上上吉</h3>
+                <p id="hpAdviceVal">建议详情...</p>
+              </div>
+            </div>
+
+            <div class="hepan-analysis-grid mt-4">
+              <div class="hp-box pros">
+                <h4>🟢 天作之合利好点</h4>
+                <ul id="hpProsList"></ul>
+              </div>
+              <div class="hp-box cons">
+                <h4>🔴 相处暗礁与磨合点</h4>
+                <ul id="hpConsList"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================== Tab 7: 档案库 ================== -->
+      <div class="tab-panel" id="tab-records">
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <h3>本地命盘档案库 (完全存储于用户电脑)</h3>
+            <button class="btn-sm-accent" onclick="saveCurrentToProfiles()">+ 保存当前命盘为档案</button>
+          </div>
+          <div class="profiles-cards-container" id="profilesContainer"></div>
+        </div>
+      </div>
+
+      <!-- ================== Tab 8: 打印与报告 ================== -->
+      <div class="tab-panel" id="tab-export">
+        <div class="export-actions-bar">
+          <button class="btn-print" onclick="window.print()">🖨️ 立即打印此命书</button>
+          <button class="btn-save-pdf" onclick="window.print()">📄 保存为 PDF 典藏版</button>
+          <span class="tip-print">提示：打印设置中勾选「背景图形」效果最佳</span>
+        </div>
+
+        <article class="printable-report" id="printableReport">
+          <div class="report-cover">
+            <div class="seal-box">天枢台</div>
+            <h1 class="report-title">命 理 考 证 详 录</h1>
+            <div class="report-subtitle" id="repSubTitle">命主详鉴</div>
+            <div class="report-date" id="repDate">公元二零二六年 岁次丙午 敬呈</div>
+          </div>
+          <div class="report-divider"></div>
+
+          <section class="report-section">
+            <h3>一、四柱干支与五行权衡</h3>
+            <div class="rep-bazi-table" id="repBaziTable"></div>
+            <p id="repStrengthAnalysis" class="mt-3">日主旺衰与气数分析...</p>
+          </section>
+
+          <section class="report-section mt-4">
+            <h3>二、事业财源与现实机运</h3>
+            <p id="repWealthText">财运分析...</p>
+          </section>
+
+          <section class="report-section mt-4">
+            <h3>三、婚恋配偶与家庭合和</h3>
+            <p id="repMarriageText">婚姻分析...</p>
+          </section>
+
+          <section class="report-section mt-4">
+            <h3>四、天纪医易合参健康调理</h3>
+            <p id="repHealthText">健康分析...</p>
+          </section>
+
+          <section class="report-section mt-4">
+            <h3>五、大运流年与行运指引</h3>
+            <p id="repDayunText">大运分析...</p>
+          </section>
+
+          <footer class="report-footer">
+            <p>天枢台 · 赛博命理分析中心 · 承传经典 知命达观</p>
+          </footer>
+        </article>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 手机长图 (命运使用说明书) 模态弹窗 -->
+  <div class="poster-modal" id="posterModal">
+    <div class="poster-modal-content">
+      <div class="poster-modal-header">
+        <span>📷 赛博命运使用说明书 (长图预览)</span>
+        <button class="close-modal-btn" onclick="closeSharePosterModal()">&times;</button>
+      </div>
+      <div class="poster-preview-box">
+        <canvas id="sharePosterCanvas" width="450" height="800"></canvas>
+      </div>
+      <div class="poster-modal-footer">
+        <button class="btn-primary-pan" onclick="downloadSharePoster()">💾 保存为高清手机长图</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧抽屉：问命盘师 (AI 智能实时对话) -->
+  <div class="chat-drawer" id="chatDrawer">
+    <div class="chat-header">
+      <div class="chat-title">
+        <span class="chat-icon">🔮</span>
+        <span>问命盘师 (天枢 AI)</span>
+      </div>
+      <button class="close-chat-btn" id="closeChatBtn">&times;</button>
+    </div>
+
+    <div class="chat-body" id="chatMessages">
+      <div class="chat-msg ai">
+        <div class="msg-bubble">
+          我是天枢台命盘师。你当前排定的四柱命盘已载入，你可以向我询问任何具体的现实困惑（如：未来两年的事业跳槽机会、婚恋正缘特征、大运吉凶）。我将结合《滴天髓》《穷通宝鉴》与倪师《天纪》为你详细剖析。
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-questions">
+      <span class="qq-pill" onclick="sendQuickQuestion('我未来两年的搞钱和事业运势如何？')">搞钱与事业</span>
+      <span class="qq-pill" onclick="sendQuickQuestion('我的正缘另一半有什么明显特征？')">婚恋与正缘</span>
+      <span class="qq-pill" onclick="sendQuickQuestion('从八字和天纪医理看，我最需注意什么健康问题？')">健康体质</span>
+      <span class="qq-pill" onclick="sendQuickQuestion('我适合合伙做生意还是独立发展？')">合伙创业</span>
+    </div>
+
+    <div class="chat-footer">
+      <div class="chat-input-box">
+        <textarea id="chatInput" rows="2" placeholder="输入你想问盘的具体问题 (Enter 发送)..." onkeydown="handleChatKey(event)"></textarea>
+        <button class="send-btn" onclick="sendChatMessage()">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
