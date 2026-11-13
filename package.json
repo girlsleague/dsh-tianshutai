@@ -33,7 +33,12 @@
   "scripts": {
     "start": "python server/app.py"
   },
-  "dependencies": {
-    "lunar-python": "^1.4.9"
-  }
+  "files": [
+    "server",
+    "static",
+    "data",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ]
 }
